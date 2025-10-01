@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciar Usuários</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+<h1 class="header-text">Painel do Administrador</h1>
+<a href="{{ url_for('index') }}" class="back-link">← Voltar para o Início</a>
+<hr>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    {% if user_count < 6 %}
+        <h2 class="sub-header-text">Criar Novo Usuário</h2>
+        <form action="{{ url_for('criar_usuario') }}" method="POST" class="form-section">
+            <div class="form-row">
+                <label for="username">Nome de Usuário:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-row" style="margin-top: 10px;">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" style="margin-top: 15px;">Criar Usuário</button>
+        </form>
+    {% else %}
+        <div class="flashes">
+            <p class="info">Limite máximo de 6 usuários atingido. Não é possível criar novas contas.</p>
+        </div>
+    {% endif %}
+    <h2 class="sub-header-text">Lista de Usuários</h2>
+    {% if users %}
+        <table class="data-table user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuário</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="status-badge admin-badge">Admin</span>
+                            {% else %}
+                                <span class="status-badge standard-badge">Padrão</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <form action="{{ url_for('reset_password', user_id=user.id) }}" method="POST" class="form-reset-password" style="margin: 0;">
+                                    <input type="password" name="new_password" placeholder="Nova senha" required class="input-reset-password">
+                                    <button type="submit" class="button-link reset-button">Redefinir Senha</button>
+                                </form>
+
+                                {% if not user.is_admin %}
+                                    <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" style="margin: 0;">
+                                        <button type="submit" class="button-link delete-button" onclick="return confirm('Tem certeza que deseja excluir este usuário? A ação não pode ser desfeita.')">Excluir</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhum usuário cadastrado.</p>
+    {% endif %}
+</div>
+
+</body>
+</html>

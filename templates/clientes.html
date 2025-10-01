@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciar Clientes</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1 class="header-text">Gerenciar Clientes</h1>
+    <a href="{{ url_for('index') }}" class="back-link">← Voltar para o Início</a>
+    <hr>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <h2 class="sub-header-text">Cadastrar Novo Cliente</h2>
+    <form method="POST" class="form-section">
+        <label for="nome">Nome do Cliente:</label>
+        <input type="text" id="nome" name="nome" required>
+        <label for="telefone">Telefone:</label>
+        <input type="text" id="telefone" name="telefone">
+        <button type="submit">Cadastrar</button>
+    </form>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="sub-header-text">Lista de Clientes</h2>
+        <button id="toggle-list-btn" class="button-link secondary-button" style="margin-bottom: 10px;">Ocultar Lista</button>
+    </div>
+
+    <div id="client-list-container">
+    {% if clientes %}
+        <div class="export-button-container">
+            <a href="{{ url_for('exportar_clientes') }}" class="button-link export-button">Exportar para Excel</a>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.id }}</td>
+                        <td>{{ cliente.nome }}</td>
+                        <td>{{ cliente.telefone if cliente.telefone else 'N/A' }}</td>
+                        <td>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <a href="{{ url_for('editar_cliente', id=cliente.id) }}" class="button-link edit-button">Editar</a>
+                                <a href="{{ url_for('excluir_cliente', id=cliente.id) }}" class="button-link delete-button">Excluir</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhum cliente cadastrado ainda.</p>
+    {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('toggle-list-btn');
+        const clientListContainer = document.getElementById('client-list-container');
+
+        if (toggleBtn && clientListContainer) {
+            toggleBtn.addEventListener('click', () => {
+                const isVisible = clientListContainer.style.display !== 'none';
+                
+                if (isVisible) {
+                    clientListContainer.style.display = 'none';
+                    toggleBtn.textContent = 'Mostrar Lista';
+                } else {
+                    clientListContainer.style.display = 'block';
+                    toggleBtn.textContent = 'Ocultar Lista';
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
