@@ -5,4 +5,5 @@ Werkzeug
 pandas
 openpyxl
 gunicorn
+scrypt
 psycopg2-binary
