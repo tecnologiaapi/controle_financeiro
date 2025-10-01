@@ -1,9 +1,9 @@
-﻿Flask
+Flask
 Flask-SQLAlchemy
 Flask-Login
 Werkzeug
 pandas
 openpyxl
 gunicorn
-scrypt
 psycopg2-binary
+Flask-Migrate
