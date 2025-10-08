@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -35,11 +34,11 @@
     <div class="summary-cards">
         <div class="card total-receber-card">
             <p>Total a Receber</p>
-            <h3>R$ {{ "%.2f"|format(total_a_receber) }}</h3>
+            <h3>R$ {{ "%.2f"|format(total_a_receber)|replace('.', ',') }}</h3>
         </div>
         <div class="card total-baixado-card">
             <p>Total Baixado</p>
-            <h3>R$ {{ "%.2f"|format(total_baixado) }}</h3>
+            <h3>R$ {{ "%.2f"|format(total_baixado)|replace('.', ',') }}</h3>
         </div>
     </div>
 
@@ -64,7 +63,7 @@
                     <tr>
                         <td>{{ parcela.numero_pedido }}</td>
                         <td>{{ parcela.cliente_nome }}</td>
-                        <td>R$ {{ "%.2f"|format(parcela.valor) }}</td>
+                        <td>R$ {{ "%.2f"|format(parcela.valor)|replace('.', ',') }}</td>
                         <td>{{ parcela.parcelas }}</td>
                         <td>{{ parcela.data_vencimento.strftime('%d/%m/%Y') }}</td>
                         <td><span class="status-badge {% if parcela.status == 'Baixado' %}baixado-badge{% else %}pendente-badge{% endif %}">{{ parcela.status }}</span></td>
