@@ -127,7 +127,6 @@ def register():
         return redirect(url_for('login'))
         
     if request.method == 'POST':
-        # ALTERADO: Usa o método de hash padrão, sem 'scrypt'
         hashed_password = generate_password_hash(request.form['password'])
         new_user = User(username=request.form['username'], password=hashed_password, is_admin=True)
         db.session.add(new_user)
@@ -188,7 +187,7 @@ def pedidos():
             data_lancamento=date.today()
         )
         db.session.add(novo_pedido)
-        db.session.flush() # Garante que o novo_pedido tenha um ID antes de criar as parcelas
+        db.session.flush()
 
         data_vencimento_primeira = date.fromisoformat(request.form['data_vencimento'])
         valor_parcela = novo_pedido.valor_total / novo_pedido.num_parcelas
@@ -245,12 +244,24 @@ def gestao_financeira():
 
     parcelas_do_mes = Parcela.query.filter(Parcela.data_vencimento.between(primeiro_dia, ultimo_dia)).order_by(Parcela.data_vencimento).all()
     
-    total_a_receber = sum(p.valor for p in parcelas_do_mes if p.status == 'Pendente')
-    total_baixado = sum(p.valor for p in parcelas_do_mes if p.status == 'Baixado')
+    # AJUSTE: Formata os dados para a exibição correta no template
+    dados_formatados = []
+    for p in parcelas_do_mes:
+        dados_formatados.append({
+            'numero_pedido': p.pedido.numero_pedido,
+            'cliente_nome': p.pedido.cliente_nome,
+            'valor': p.valor,
+            'parcelas': f'{p.parcela_num}/{p.pedido.num_parcelas}',
+            'data_vencimento': p.data_vencimento,
+            'status': p.status
+        })
+    
+    total_a_receber = sum(p['valor'] for p in dados_formatados if p['status'] == 'Pendente')
+    total_baixado = sum(p['valor'] for p in dados_formatados if p['status'] == 'Baixado')
 
     return render_template(
         'gestao_financeira.html',
-        parcelas_do_mes=parcelas_do_mes,
+        parcelas_do_mes=dados_formatados,
         total_a_receber=total_a_receber,
         total_baixado=total_baixado,
         mes=mes,
@@ -311,7 +322,6 @@ def criar_usuario():
     if User.query.filter_by(username=username).first():
         flash(f'O nome de usuário "{username}" já existe.', 'error')
         return redirect(url_for('admin_users'))
-    # ALTERADO: Usa o método de hash padrão, sem 'scrypt'
     hashed_password = generate_password_hash(password)
     new_user = User(username=username, password=hashed_password, is_admin=False)
     db.session.add(new_user)
@@ -327,7 +337,6 @@ def reset_password(user_id):
         return redirect(url_for('index'))
     user = User.query.get_or_404(user_id)
     nova_senha = request.form['new_password']
-    # ALTERADO: Usa o método de hash padrão, sem 'scrypt'
     user.password = generate_password_hash(nova_senha)
     db.session.commit()
     flash(f'A senha do usuário {user.username} foi redefinida com sucesso!', 'success')
@@ -348,6 +357,10 @@ def delete_user(user_id):
     flash(f'Usuário "{user_to_delete.username}" excluído com sucesso!', 'success')
     return redirect(url_for('admin_users'))
 
-# O bloco if __name__ == '__main__' é removido pois o Gunicorn (servidor de produção)
-# irá importar e executar a variável 'app' diretamente.
-# O comando db.create_all() é executado pelo script 'build.sh' durante o deploy.
+# Bloco para execução direta e criação do banco de dados
+#if __name__ == '__main__':
+#    with app.app_context():
+        # Cria todas as tabelas no banco de dados se elas ainda não existirem
+#        db.create_all()
+    # Inicia o servidor de desenvolvimento
+#    app.run(debug=True)
