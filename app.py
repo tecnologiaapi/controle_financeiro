@@ -231,6 +231,67 @@ def excluir_pedido(id):
     flash('Pedido excluído com sucesso!', 'success')
     return redirect(url_for('pedidos'))
 
+# --- NOVA ROTA ADICIONADA ---
+@app.route('/editar_pedido/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_pedido(id):
+    """Página para editar um pedido existente."""
+    pedido = Pedido.query.get_or_404(id)
+    
+    # Regra de Segurança: Verifica se alguma parcela já foi baixada
+    parcelas_baixadas = Parcela.query.filter_by(pedido_id=pedido.id, status='Baixado').count()
+    if parcelas_baixadas > 0 and request.method == 'POST':
+        # Se já tem parcela baixada, só permite alterar dados do pedido, não financeiros
+        pedido.numero_pedido = request.form['numero_pedido']
+        pedido.cliente_nome = request.form['cliente_nome']
+        db.session.commit()
+        flash('Pedido atualizado (apenas dados do cliente/número). Valores e parcelas não podem ser alterados pois já existem parcelas baixadas.', 'info')
+        return redirect(url_for('pedidos'))
+
+    if request.method == 'POST':
+        # 1. Atualiza os dados do Pedido principal
+        pedido.numero_pedido = request.form['numero_pedido']
+        pedido.cliente_nome = request.form['cliente_nome']
+        pedido.valor_total = float(request.form['valor'])
+        pedido.forma_pagamento = request.form['forma_pagamento']
+        pedido.num_parcelas = int(request.form.get('num_parcelas') or 1)
+        
+        # 2. Exclui todas as parcelas antigas (apenas se não houver baixadas)
+        Parcela.query.filter_by(pedido_id=pedido.id).delete()
+
+        # 3. Recria as parcelas com os novos dados (lógica de 'pedidos')
+        data_vencimento_primeira = date.fromisoformat(request.form['data_vencimento'])
+        valor_parcela = pedido.valor_total / pedido.num_parcelas
+        for i in range(pedido.num_parcelas):
+            data_parcela = add_months(data_vencimento_primeira, i)
+            nova_parcela = Parcela(
+                valor=valor_parcela, 
+                data_vencimento=data_parcela, 
+                parcela_num=i + 1, 
+                pedido_id=pedido.id,
+                status='Pendente' # Garante que novas parcelas sejam pendentes
+            )
+            db.session.add(nova_parcela)
+        
+        db.session.commit()
+        flash('Pedido atualizado com sucesso!', 'success')
+        return redirect(url_for('pedidos'))
+
+    # Método GET: Carrega dados para preencher o formulário
+    # Pega a data de vencimento da primeira parcela para preencher o formulário
+    primeira_parcela = Parcela.query.filter_by(pedido_id=pedido.id, parcela_num=1).first()
+    data_vencimento_primeira = ""
+    if primeira_parcela:
+        data_vencimento_primeira = primeira_parcela.data_vencimento.isoformat()
+
+    return render_template(
+        'editar_pedido.html', 
+        pedido=pedido, 
+        data_vencimento_primeira=data_vencimento_primeira,
+        tem_parcela_baixada=parcelas_baixadas > 0
+    )
+# --- FIM DA NOVA ROTA ---
+
 @app.route('/gestao_financeira')
 @login_required
 def gestao_financeira():
@@ -358,9 +419,8 @@ def delete_user(user_id):
     return redirect(url_for('admin_users'))
 
 # Bloco para execução direta e criação do banco de dados
+#with app.app_context():
+#     db.create_all()
+#
 #if __name__ == '__main__':
-#    with app.app_context():
-        # Cria todas as tabelas no banco de dados se elas ainda não existirem
-#        db.create_all()
-    # Inicia o servidor de desenvolvimento
 #    app.run(debug=True)
