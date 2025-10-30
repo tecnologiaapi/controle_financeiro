@@ -32,9 +32,7 @@
         <label for="valor_display">Valor Total:</label>
         <div style="display: flex; align-items: center; gap: 5px;">
             <span style="font-size: 1em;">R$</span>
-            <!-- Campo visível para o usuário com a máscara -->
             <input type="text" id="valor_display" placeholder="123,45" required style="flex-grow: 1;" inputmode="decimal">
-            <!-- Campo oculto que envia o valor numérico para o servidor -->
             <input type="hidden" id="valor" name="valor">
         </div>
 
@@ -85,7 +83,13 @@
                         <td>{{ pedido.cliente_nome }}</td>
                         <td>{{ pedido.forma_pagamento }}</td>
                         <td>R$ {{ "%.2f"|format(pedido.valor_total)|replace('.', ',') }}</td>
-                        <td><a href="{{ url_for('excluir_pedido', id=pedido.id) }}" class="button-link delete-button">Excluir Pedido</a></td>
+                        
+                        <td>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <a href="{{ url_for('editar_pedido', id=pedido.id) }}" class="button-link edit-button">Editar Pedido</a>
+                                <a href="{{ url_for('excluir_pedido', id=pedido.id) }}" class="button-link delete-button">Excluir Pedido</a>
+                            </div>
+                        </td>
                         <td>
                             <button class="toggle-parcelas button-link secondary-button" data-pedido-id="{{ pedido.id }}">Ver detalhes</button>
                         </td>
