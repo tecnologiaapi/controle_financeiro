@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar Pedido</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+<h1 class="header-text">Editar Pedido</h1>
+<a href="{{ url_for('pedidos') }}" class="back-link">← Voltar para Pedidos</a>
+<hr>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    {% if tem_parcela_baixada %}
+        <div class="flashes">
+            <p class="error"><b>Atenção:</b> Este pedido possui parcelas baixadas e não pode ter seus valores, parcelas ou datas recalculados.<br>Você só pode editar o "Número do Pedido" e o "Nome do Cliente".</p>
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('editar_pedido', id=pedido.id) }}" class="form-section">
+        
+        <label for="numero_pedido">Número do Pedido:</label>
+        <input type="text" id="numero_pedido" name="numero_pedido" value="{{ pedido.numero_pedido }}" required>
+
+        <label for="cliente_nome">Nome do Cliente:</label>
+        <input type="text" id="cliente_nome" name="cliente_nome" value="{{ pedido.cliente_nome }}" required>
+
+        <label for="valor_display">Valor Total:</label>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span style="font-size: 1em;">R$</span>
+            <input type="text" id="valor_display" placeholder="123,45" required style="flex-grow: 1;" 
+                   value="{{ '%.2f'|format(pedido.valor_total)|replace('.', ',') }}" 
+                   inputmode="decimal" {% if tem_parcela_baixada %}disabled{% endif %}>
+            <input type="hidden" id="valor" name="valor" value="{{ pedido.valor_total }}">
+        </div>
+
+        <label for="forma_pagamento" style="margin-top: 10px;">Forma de Pagamento:</label>
+        <select id="forma_pagamento" name="forma_pagamento" required {% if tem_parcela_baixada %}disabled{% endif %}>
+            <option value="A Vista" {% if pedido.forma_pagamento == 'A Vista' %}selected{% endif %}>À Vista</option>
+            <option value="A Prazo" {% if pedido.forma_pagamento == 'A Prazo' %}selected{% endif %}>À Prazo</option>
+        </select>
+
+        <div id="parcelas_container" style="display: none;">
+            <label for="num_parcelas">Número de Parcelas:</label>
+            <select id="num_parcelas" name="num_parcelas" {% if tem_parcela_baixada %}disabled{% endif %}>
+                {% for i in range(1, 13) %}
+                <option value="{{ i }}" {% if i == pedido.num_parcelas %}selected{% endif %}>{{ i }}x</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <label for="data_vencimento">Data de Vencimento (1ª Parcela):</label>
+        <input type="date" id="data_vencimento" name="data_vencimento" value="{{ data_vencimento_primeira }}" required {% if tem_parcela_baixada %}disabled{% endif %}>
+
+        <button type="submit">Salvar Alterações</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        // --- Script para máscara de moeda ---
+        const valorDisplay = document.getElementById('valor_display');
+        const valorHidden = document.getElementById('valor');
+
+        valorDisplay.addEventListener('input', (e) => {
+            // Se o campo estiver desabilitado, não faz nada
+            if (e.target.disabled) return;
+
+            let value = e.target.value.replace(/\D/g, '');
+            if (value) {
+                let numberValue = parseInt(value, 10) / 100;
+                let formattedValue = numberValue.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                e.target.value = formattedValue;
+                valorHidden.value = numberValue.toFixed(2);
+            } else {
+                e.target.value = '';
+                valorHidden.value = '';
+            }
+        });
+        
+        // Garante que o valor oculto esteja correto no carregamento
+        // (necessário se o valor inicial for 0 ou nulo)
+        if (!valorHidden.value) {
+            valorHidden.value = parseFloat('{{ pedido.valor_total }}').toFixed(2);
+        }
+
+        // --- Lógica para o formulário de novo pedido ---
+        const formaPagamentoSelect = document.getElementById('forma_pagamento');
+        const parcelasContainer = document.getElementById('parcelas_container');
+        
+        function toggleParcelas() {
+            if (formaPagamentoSelect.value === 'A Prazo') {
+                parcelasContainer.style.display = 'block';
+            } else {
+                parcelasContainer.style.display = 'none';
+            }
+        }
+        
+        formaPagamentoSelect.addEventListener('change', toggleParcelas);
+        // Executa a função na inicialização para exibir/ocultar corretamente
+        toggleParcelas();
+    });
+</script>
+
+</body>
+</html>
