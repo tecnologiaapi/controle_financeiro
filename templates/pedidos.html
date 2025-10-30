@@ -59,6 +59,11 @@
     </form>
 
     <h2 class="sub-header-text">Pedidos Lançados</h2>
+
+    <div class="form-section" style="padding: 15px; margin-bottom: 20px;">
+        <label for="search-input">Buscar Pedido:</label>
+        <input type="text" id="search-input" placeholder="Digite o nº do pedido ou nome do cliente para filtrar..." style="width: 100%; box-sizing: border-box;">
+    </div>
     {% if pedidos %}
         <div class="export-button-container" style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
             <button id="expand-all-btn" class="button-link secondary-button">Expandir Todos</button>
@@ -126,35 +131,25 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', (event) => {
-        // --- NOVO: Script para máscara de moeda ---
+        // --- Script para máscara de moeda ---
         const valorDisplay = document.getElementById('valor_display');
         const valorHidden = document.getElementById('valor');
 
         valorDisplay.addEventListener('input', (e) => {
-            // Remove tudo que não for dígito
             let value = e.target.value.replace(/\D/g, '');
-
             if (value) {
-                // Converte para número e divide por 100 para ter as casas decimais
                 let numberValue = parseInt(value, 10) / 100;
-                
-                // Formata para o padrão BRL (ex: 1.234,56)
                 let formattedValue = numberValue.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
-                
                 e.target.value = formattedValue;
-
-                // Atualiza o campo oculto com o formato numérico correto (ex: 1234.56)
                 valorHidden.value = numberValue.toFixed(2);
             } else {
                 e.target.value = '';
                 valorHidden.value = '';
             }
         });
-
-        // --- Fim do script de máscara ---
 
         // Lógica para o formulário de novo pedido
         const formaPagamentoSelect = document.getElementById('forma_pagamento');
@@ -215,6 +210,43 @@
                 });
             });
         }
+
+        // --- NOVO SCRIPT DE BUSCA ---
+        const searchInput = document.getElementById('search-input');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                
+                document.querySelectorAll('.pedido-row').forEach(pedidoRow => {
+                    // 1. Pega o ID do pedido (do botão de detalhes)
+                    const button = pedidoRow.querySelector('.toggle-parcelas');
+                    const pedidoId = button ? button.dataset.pedidoId : null;
+                    if (!pedidoId) return;
+
+                    // 2. Pega o texto da linha principal do pedido (Nº do Pedido, Cliente, etc.)
+                    const rowText = pedidoRow.textContent.toLowerCase();
+
+                    // 3. Verifica se o texto da linha corresponde à busca
+                    const isVisible = rowText.includes(query);
+
+                    // 4. Mostra/Esconde a linha principal
+                    pedidoRow.style.display = isVisible ? 'table-row' : 'none';
+
+                    // 5. Se a linha principal for escondida, esconde também as parcelas
+                    if (!isVisible) {
+                        const parcelaRows = document.querySelectorAll(`.parcela-row[data-pedido-id="${pedidoId}"]`);
+                        parcelaRows.forEach(parcela => {
+                            parcela.style.display = 'none';
+                        });
+                    }
+                    // Se for visível, a lógica de expandir/minimizar (acima) já cuida
+                    // de manter as parcelas escondidas ou mostradas conforme o estado do botão.
+                });
+            });
+        }
+        // --- FIM DO NOVO SCRIPT DE BUSCA ---
+
     });
 </script>
 
